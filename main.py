@@ -7,7 +7,7 @@ import sys
 center = [-20.27684329445295, -40.3013367945867]
 m = folium.Map(location=center, zoom_start=16)
 
-csv_path = "with_duplicated_cols.csv"
+csv_path = "data.csv"
 points = []
 
 def _to_float(v):
@@ -22,11 +22,17 @@ if os.path.exists(csv_path):
             reader = csv.DictReader(fh)
             for row in reader:
                 # keep original strings so we can show the full (unrounded) values in the tooltip
-                lat_str = row.get('Location Latitude')
-                lon_str = row.get('Location Longitude')
+                lat_str = row.get('location_latitude')
+                lon_str = row.get('location_logitude')
                 lat = _to_float(lat_str)
                 lon = _to_float(lon_str)
-                rating = _to_float(row.get('predicted_rating_probability') or row.get('rating_value rating probability'))
+                # prefer the explicit rating_value (if present and numeric), otherwise use predicted_probability
+                rating_val_str = row.get('rating_value')
+                # try to parse rating_value first
+                rating = _to_float(rating_val_str) if rating_val_str is not None else None
+                # fallback to predicted_rating_probability if rating_value missing or not numeric
+                if rating is None:
+                    rating = _to_float(row.get('predicted_rating_probability'))
                 if lat is not None and lon is not None and rating is not None:
                     # store original strings alongside floats
                     points.append((lat, lon, rating, lat_str, lon_str))
